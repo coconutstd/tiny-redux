@@ -1,12 +1,18 @@
 import { createStore } from './redux.js'
 
-function updater(state, data) {
-    state = data;
+function reducer(state, data) {
+    if (data.type === 'count') {
+        return { ...state, counter: data.payload.counter };
+    }
+
+    return state;
 }
 
-const store = createStore(updater);
+const store = createStore(reducer);
 
-store.doUpdate({ counter: 1});
-
-// 왜 undefined가 나올까?
-console.log(store.getState());
+store.dispatch({
+    type: 'count',
+    payload: {
+        counter: 1
+    }
+});
