@@ -1,45 +1,59 @@
-import { createStore } from './redux.js'
+import { createStore, actionCreator } from "./redux-middleware";
 
-const COUNTER = 'count';
-const FETCH = 'fetch';
-
-const middleware1 = (store) => (dispatch)  => (action) => {
-    console.log('mid 1');
-    dispatch(action);
-}
-
-const middleware2 = (store) => (dispatch)  => (action) => {
-    console.log('mid 2');
-    dispatch(action);
-}
-
-function reducer(state, action) {
-    if (action.type === COUNTER) {
-        return { ...state, counter: action.payload.counter };
+function reducer(state = {}, { type, payload }) {
+    switch (type) {
+        case "init":
+            return {
+                ...state,
+                count: payload.count
+            };
+        case "inc":
+            return {
+                ...state,
+                count: state.count + 1
+            };
+        case "reset":
+            return {
+                ...state,
+                count: 0
+            };
+        default:
+            return { ...state };
     }
-
-    return state;
 }
 
-function listener() {
+const logger = (store) => (next) => (action) => {
+    console.log("logger: ", action.type);
+    next(action);
+};
+
+const monitor = (store) => (next) => (action) => {
+    setTimeout(() => {
+        console.log("monitor: ", action.type);
+        next(action);
+    }, 2000);
+};
+
+const store = createStore(reducer, [logger, monitor]);
+
+store.subscribe(() => {
     console.log(store.getState());
-}
+});
 
-function actionCreator(type, payload) {
-    return {
-        type,
-        payload,
+store.dispatch({
+    type: "init",
+    payload: {
+        count: 1
     }
-}
+});
 
-const store = createStore(reducer, [middleware1, middleware2]);
+store.dispatch({
+    type: "inc"
+});
 
-store.subscribe(listener);
+const Reset = () => store.dispatch(actionCreator("reset"));
+const Increment = () => store.dispatch(actionCreator("inc"));
 
-store.dispatch(actionCreator(COUNTER, { counter: 2}));
-
-function counter(data) {
-    store.dispatch(actionCreator(COUNTER, data));
-}
-
-counter({ counter: 1});
+Increment();
+Reset();
+Increment();

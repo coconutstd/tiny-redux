@@ -1,33 +1,42 @@
-export function createStore(reducer, middleware = []) {
+export function createStore(reducer, middlewares = []) {
     let state;
-    const handler = [];
-
-    function dispatch(action) {
-        state = reducer(state, action);
-        handler.forEach((listener) => {
-            listener();
+    const listeners = [];
+    const publish = () => {
+        listeners.forEach(({ subscriber, context }) => {
+            subscriber.call(context);
         });
-    }
+    };
 
-    function getState() {
-        return state;
-    }
+    const dispatch = (action) => {
+        state = reducer(state, action);
+        publish();
+    };
 
-    function subscribe(listener) {
-        handler.push(listener);
-    }
+    const subscribe = (subscriber, context = null) => {
+        listeners.push({
+            subscriber,
+            context
+        });
+    };
 
+    const getState = () => ({ ...state });
     const store = {
+        dispatch,
         getState,
         subscribe
-    }
+    };
 
-    middleware = Array.from(middleware).reverse();
-    let lastDispatch = dispatch;
+    middlewares = Array.from(middlewares).reverse();
+    let lastDispatch = store.dispatch;
 
-    middleware.forEach(m => {
-        lastDispatch = m(store)(lastDispatch);
+    middlewares.forEach((middleware) => {
+        lastDispatch = middleware(store)(lastDispatch);
     });
 
-    return {...store, dispatch: lastDispatch };
+    return { ...store, dispatch: lastDispatch };
 }
+
+export const actionCreator = (type, payload = {}) => ({
+    type,
+    payload: { ...payload }
+});
